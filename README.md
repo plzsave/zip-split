@@ -29,7 +29,7 @@ dir_b.zip     # dir_b 直下のファイルのみ
 ## インストール
 
 ```sh
-cargo install --git https://github.com/yskab/zip-split
+cargo install --git https://github.com/ysk-ab031/zip-split
 ```
 
 ## 使い方
