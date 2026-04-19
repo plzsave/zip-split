@@ -3,6 +3,17 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+fn decode_zip_name(raw: &[u8]) -> String {
+    if std::str::from_utf8(raw).is_ok() {
+        return String::from_utf8_lossy(raw).into_owned();
+    }
+    let (cow, _encoding, had_errors) = encoding_rs::SHIFT_JIS.decode(raw);
+    if !had_errors {
+        return cow.into_owned();
+    }
+    String::from_utf8_lossy(raw).into_owned()
+}
+
 pub fn extract_dirs_as_zips(src_zip_path: &str, output_dir: &str) -> zip::result::ZipResult<()> {
     let output_path = Path::new(output_dir);
     std::fs::create_dir_all(output_path)?;
@@ -16,27 +27,32 @@ pub fn extract_dirs_as_zips(src_zip_path: &str, output_dir: &str) -> zip::result
     let file = File::open(src_zip_path)?;
     let mut src_zip = zip::ZipArchive::new(file)?;
 
-    let mut dir_members: HashMap<String, Vec<(String, String)>> = HashMap::new();
+    let mut dir_members: HashMap<String, Vec<(String, Vec<u8>)>> = HashMap::new();
 
     for i in 0..src_zip.len() {
-        let entry = src_zip.by_index(i)?;
+        let mut entry = src_zip.by_index(i)?;
+        let name = decode_zip_name(entry.name_raw());
         if entry.is_dir() {
             continue;
         }
 
-        let full_path = PathBuf::from(entry.name());
+        let full_path = PathBuf::from(&name);
         let direct_parent = match full_path.parent() {
             Some(p) if p != Path::new("") => p.to_path_buf(),
             _ => PathBuf::new(),
         };
 
         let rel_path = full_path.file_name().unwrap().to_string_lossy().to_string();
+        let mut buf = Vec::new();
+        entry.read_to_end(&mut buf)?;
 
         dir_members
             .entry(direct_parent.to_string_lossy().to_string())
             .or_default()
-            .push((entry.name().to_string(), rel_path));
+            .push((rel_path, buf));
     }
+
+    let src_zip_canonical = std::fs::canonicalize(src_zip_path).ok();
 
     for (dir_path, members) in &dir_members {
         let zip_name = if dir_path.is_empty() {
@@ -44,19 +60,21 @@ pub fn extract_dirs_as_zips(src_zip_path: &str, output_dir: &str) -> zip::result
         } else {
             dir_path.replace('/', "_")
         };
-        let out_zip_path = output_path.join(format!("{}.zip", zip_name));
+        let candidate = output_path.join(format!("{}.zip", zip_name));
+        let out_zip_path =
+            if src_zip_canonical.as_deref() == std::fs::canonicalize(&candidate).ok().as_deref() {
+                output_path.join(format!("{}_extracted.zip", zip_name))
+            } else {
+                candidate
+            };
         let out_file = File::create(&out_zip_path)?;
         let mut out_zip = zip::ZipWriter::new(out_file);
         let options = zip::write::SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated);
 
-        for (full_name, rel_path) in members {
-            let mut entry = src_zip.by_name(full_name)?;
-            let mut buf = Vec::new();
-            entry.read_to_end(&mut buf)?;
-
+        for (rel_path, buf) in members {
             out_zip.start_file(rel_path, options)?;
-            out_zip.write_all(&buf)?;
+            out_zip.write_all(buf)?;
         }
 
         out_zip.finish()?;

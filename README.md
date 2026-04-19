@@ -18,13 +18,19 @@ archive.zip
 
 出力:
 ```
-archive.zip   # ルート直下のファイル
-dir_a.zip     # dir_a 直下のファイルのみ
-dir_a_sub.zip # dir_a/sub 直下のファイルのみ
-dir_b.zip     # dir_b 直下のファイルのみ
+archive_extracted.zip  # ルート直下のファイル（ソースと同名になる場合は _extracted を付加）
+dir_a.zip              # dir_a 直下のファイルのみ
+dir_a_sub.zip          # dir_a/sub 直下のファイルのみ
+dir_b.zip              # dir_b 直下のファイルのみ
 ```
 
 各zipには、そのディレクトリの**直下ファイルのみ**が含まれます（サブディレクトリは別zipになります）。
+
+出力先がソースzipと同じディレクトリで、かつ出力ファイル名がソースと衝突する場合は、自動的に `_extracted` サフィックスを付けてリネームします。
+
+## 対応エンコーディング
+
+ファイル名・フォルダ名のエンコーディングとしてUTF-8およびSHIFT_JISに対応しています。日本語Windowsで作成されたzipファイルも文字化けせずに処理できます。
 
 ## インストール
 
