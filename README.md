@@ -16,17 +16,18 @@ archive.zip
     └── baz.txt
 ```
 
-出力:
+出力（デフォルト: `archive/` フォルダ配下）:
 ```
-archive_extracted.zip  # ルート直下のファイル（ソースと同名になる場合は _extracted を付加）
-dir_a.zip              # dir_a 直下のファイルのみ
-dir_a_sub.zip          # dir_a/sub 直下のファイルのみ
-dir_b.zip              # dir_b 直下のファイルのみ
+archive/
+├── archive.zip    # ルート直下のファイル
+├── dir_a.zip      # dir_a 直下のファイルのみ
+├── dir_a_sub.zip  # dir_a/sub 直下のファイルのみ
+└── dir_b.zip      # dir_b 直下のファイルのみ
 ```
 
 各zipには、そのディレクトリの**直下ファイルのみ**が含まれます（サブディレクトリは別zipになります）。
 
-出力先がソースzipと同じディレクトリで、かつ出力ファイル名がソースと衝突する場合は、自動的に `_extracted` サフィックスを付けてリネームします。
+`-o` で出力先を明示した場合に、出力ファイル名がソースzipと衝突するときは自動的に `_extracted` サフィックスを付けてリネームします。
 
 ## 対応エンコーディング
 
@@ -47,11 +48,11 @@ zip-split <zipファイル> [-o <出力先ディレクトリ>]
 ### 例
 
 ```sh
-# カレントディレクトリに展開
+# archive/ フォルダ配下に展開（デフォルト）
 zip-split archive.zip
 
-# 出力先を指定
-zip-split archive.zip -o ./output
+# 出力先フォルダ名を指定してリネーム
+zip-split archive.zip -o my-output
 ```
 
 ## ライセンス
